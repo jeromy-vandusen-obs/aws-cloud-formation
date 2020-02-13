@@ -1,0 +1,114 @@
+# Creates a VPC with a single CIDR block, an Internet Gateway attached to the
+# VPC, a public Route Table with a Route to the Internet Gateway, and a private
+# Route Table.
+#
+# Parameters:
+# - CidrBlockPrefix: The 16-bit prefix for the CIDR block. Valid values are:
+#   - 10.0 through 10.255
+#   - 172.16 through 172.31
+#   - 192.168
+# - Environment: The environment name (e.g. dev, test, prod). Resources will
+#   be tagged with names that use this environment name (e.g. vpc-prod).
+#
+# Outputs:
+# - VPCId: The ID of the VPC that was created.
+# - PublicRouteTableId: The ID of the Route Table that was created with a route
+#   to the Internet Gateway.
+# - PrivateRouteTableId: The ID of the private Route Table that was created.
+# - CidrBlockPrefix: The parameter value that was provided, to be passed on to
+#   other templates for consistency.
+# - Environment: The parameter value that was provided, to be passed on to other
+#   templates for consistency.
+
+Parameters:
+  CidrBlockPrefix:
+    Type: String
+    MinLength: 4
+    MaxLength: 7
+    AllowedPattern: ^[0-9]{1,3}\.[0-9]{1,3}$
+  Environment:
+    Type: String
+    MinLength: 1
+    MaxLength: 255
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Sub ${CidrBlockPrefix}.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Sub vpc-${Environment}
+        - Key: Env
+          Value: !Sub ${Environment}
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub igw-${Environment}
+        - Key: Env
+          Value: !Sub ${Environment}
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub rt-${Environment}-public
+        - Key: Env
+          Value: !Sub ${Environment}
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub rt-${Environment}-private
+        - Key: Env
+          Value: !Sub ${Environment}
+
+Outputs:
+  VPCId:
+    Description: VPC ID
+    Value: !Ref VPC
+    Export:
+      Name: !Sub ${AWS::StackName}-VPCID
+  PublicRouteTableId:
+    Description: Public route table ID
+    Value: !Ref PublicRouteTable
+    Export:
+      Name: !Sub ${AWS::StackName}-PublicRouteTableId
+  PrivateRouteTableId:
+    Description: Private route table ID
+    Value: !Ref PrivateRouteTable
+    Export:
+      Name: !Sub ${AWS::StackName}-PrivateRouteTableId
+  CidrBlockPrefix:
+    Description: CIDR block prefix
+    Value: !Sub ${CidrBlockPrefix}
+    Export:
+      Name: !Sub ${AWS::StackName}-CidrBlockPrefix
+  Environment:
+    Description: Environment
+    Value: !Sub ${Environment}
+    Export:
+      Name: !Sub ${AWS::StackName}-Environment

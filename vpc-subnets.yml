@@ -1,0 +1,224 @@
+# Building onto an existing VPC created using the "vpc.yml" template, creates
+# two public Subnets and two private Subnets, each in different Availability
+# Zones, and associates them with the two Route Tables that were already
+# created.
+#
+# Parameters:
+# - VPCStackName: The name of the stack that was created using the "vpc.yml"
+#   template, and from which various exported values will be imported.
+#
+# Outputs:
+# - PublicSubnet1Id: The ID of the first public Subnet that was created.
+# - PublicSubnet2Id: The ID of the second public Subnet that was created.
+# - PrivateSubnet1Id: The ID of the first private Subnet that was created.
+# - PrivateSubnet2Id: The ID of the second private Subnet that was created.
+
+Parameters:
+  VPCStackName:
+    Type: String
+    MinLength: 1
+    MaxLength: 255
+    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+
+Resources:
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Fn::ImportValue: !Sub ${VPCStackName}-VPCID
+      CidrBlock: !Join
+        - ""
+        - - Fn::ImportValue: !Sub ${VPCStackName}-CidrBlockPrefix
+          - .0.0/20
+      AvailabilityZone: us-east-1a
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - subnet-
+              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
+              - -public1
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+  PublicSubnet1RouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Fn::ImportValue: !Sub ${VPCStackName}-PublicRouteTableId
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Fn::ImportValue: !Sub ${VPCStackName}-VPCID
+      CidrBlock: !Join
+        - ""
+        - - Fn::ImportValue: !Sub ${VPCStackName}-CidrBlockPrefix
+          - .16.0/20
+      AvailabilityZone: us-east-1b
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - subnet-
+              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
+              - -public2
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+  PublicSubnet2RouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Fn::ImportValue: !Sub ${VPCStackName}-PublicRouteTableId
+      SubnetId: !Ref PublicSubnet2
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Fn::ImportValue: !Sub ${VPCStackName}-VPCID
+      CidrBlock: !Join
+        - ""
+        - - Fn::ImportValue: !Sub ${VPCStackName}-CidrBlockPrefix
+          - .128.0/20
+      AvailabilityZone: us-east-1a
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - subnet-
+              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
+              - -private1
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+  PrivateSubnet1RouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Fn::ImportValue: !Sub ${VPCStackName}-PrivateRouteTableId
+      SubnetId: !Ref PrivateSubnet1
+  NATGateway1ElasticIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - eip-
+              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
+              - -nat1
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+  NATGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: GetAtt! NATGateway1ElasticIp.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - ngw-
+              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
+              - -nat1
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+  NATGateway1Route:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Fn::ImportValue: !Sub ${VPCStackName}-PrivateRouteTableId
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref NATGateway1
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Fn::ImportValue: !Sub ${VPCStackName}-VPCID
+      CidrBlock: !Join
+        - ""
+        - - Fn::ImportValue: !Sub ${VPCStackName}-CidrBlockPrefix
+          - .144.0/20
+      AvailabilityZone: us-east-1b
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - subnet-
+              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
+              - -private2
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+  PrivateSubnet2RouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Fn::ImportValue: !Sub ${VPCStackName}-PrivateRouteTableId
+      SubnetId: !Ref PrivateSubnet2
+  NATGateway2ElasticIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - eip-
+              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
+              - -nat2
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+  NATGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: GetAtt! NATGateway2ElasticIp.AllocationId
+      SubnetId: !Ref PublicSubnet2
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - ngw-
+              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
+              - -nat2
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+  NATGateway2Route:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Fn::ImportValue: !Sub ${VPCStackName}-PrivateRouteTableId
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref NATGateway2
+
+Outputs:
+  PublicSubnet1Id:
+    Description: Public subnet 1 ID
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Sub ${AWS::StackName}-PublicSubnet1ID
+  PublicSubnet2Id:
+    Description: Public subnet 2 ID
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Sub ${AWS::StackName}-PublicSubnet2ID
+  PrivateSubnet1Id:
+    Description: Private subnet 1 ID
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Sub ${AWS::StackName}-PrivateSubnet1ID
+  PrivateSubnet2Id:
+    Description: Private subnet 2 ID
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub ${AWS::StackName}-PrivateSubnet2ID
