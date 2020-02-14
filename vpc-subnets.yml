@@ -34,14 +34,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Join
-            - ""
-            - - subnet-
-              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
-              - -public1
-        - Key: Env
-          Value:
-            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+          Value: PublicSubnet1
   PublicSubnet1RouteTable:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -62,14 +55,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Join
-            - ""
-            - - subnet-
-              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
-              - -public2
-        - Key: Env
-          Value:
-            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+          Value: PublicSubnet2
   PublicSubnet2RouteTable:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -89,55 +75,35 @@ Resources:
       AvailabilityZone: us-east-1a
       Tags:
         - Key: Name
-          Value: !Join
-            - ""
-            - - subnet-
-              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
-              - -private1
-        - Key: Env
-          Value:
-            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+          Value: PrivateSubnet1
   PrivateSubnet1RouteTable:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId:
-        Fn::ImportValue: !Sub ${VPCStackName}-PrivateRouteTableId
+        Fn::ImportValue: !Sub ${VPCStackName}-PrivateRouteTable1Id
       SubnetId: !Ref PrivateSubnet1
   NATGateway1ElasticIp:
     Type: AWS::EC2::EIP
     Properties:
       Tags:
         - Key: Name
-          Value: !Join
-            - ""
-            - - eip-
-              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
-              - -nat1
-        - Key: Env
-          Value:
-            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+          Value: NAT1EIP
   NATGateway1:
     Type: AWS::EC2::NatGateway
+    DependsOn: NATGateway1ElasticIp
     Properties:
-      AllocationId: GetAtt! NATGateway1ElasticIp.AllocationId
+      AllocationId: !GetAtt NATGateway1ElasticIp.AllocationId
       SubnetId: !Ref PublicSubnet1
       Tags:
         - Key: Name
-          Value: !Join
-            - ""
-            - - ngw-
-              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
-              - -nat1
-        - Key: Env
-          Value:
-            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+          Value: NAT1
   NATGateway1Route:
     Type: AWS::EC2::Route
     Properties:
       RouteTableId:
-        Fn::ImportValue: !Sub ${VPCStackName}-PrivateRouteTableId
+        Fn::ImportValue: !Sub ${VPCStackName}-PrivateRouteTable1Id
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref NATGateway1
+      NatGatewayId: !Ref NATGateway1
 
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
@@ -151,55 +117,35 @@ Resources:
       AvailabilityZone: us-east-1b
       Tags:
         - Key: Name
-          Value: !Join
-            - ""
-            - - subnet-
-              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
-              - -private2
-        - Key: Env
-          Value:
-            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+          Value: PrivateSubnet2
   PrivateSubnet2RouteTable:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId:
-        Fn::ImportValue: !Sub ${VPCStackName}-PrivateRouteTableId
+        Fn::ImportValue: !Sub ${VPCStackName}-PrivateRouteTable2Id
       SubnetId: !Ref PrivateSubnet2
   NATGateway2ElasticIp:
     Type: AWS::EC2::EIP
     Properties:
       Tags:
         - Key: Name
-          Value: !Join
-            - ""
-            - - eip-
-              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
-              - -nat2
-        - Key: Env
-          Value:
-            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+          Value: NAT2EIP
   NATGateway2:
     Type: AWS::EC2::NatGateway
+    DependsOn: NATGateway2ElasticIp
     Properties:
-      AllocationId: GetAtt! NATGateway2ElasticIp.AllocationId
+      AllocationId: !GetAtt NATGateway2ElasticIp.AllocationId
       SubnetId: !Ref PublicSubnet2
       Tags:
         - Key: Name
-          Value: !Join
-            - ""
-            - - ngw-
-              - Fn::ImportValue: !Sub ${VPCStackName}-Environment
-              - -nat2
-        - Key: Env
-          Value:
-            Fn::ImportValue: !Sub ${VPCStackName}-Environment
+          Value: NAT2
   NATGateway2Route:
     Type: AWS::EC2::Route
     Properties:
       RouteTableId:
-        Fn::ImportValue: !Sub ${VPCStackName}-PrivateRouteTableId
+        Fn::ImportValue: !Sub ${VPCStackName}-PrivateRouteTable2Id
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref NATGateway2
+      NatGatewayId: !Ref NATGateway2
 
 Outputs:
   PublicSubnet1Id:
