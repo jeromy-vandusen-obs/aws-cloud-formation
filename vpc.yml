@@ -9,7 +9,7 @@
 #   - 192.168
 #
 # Outputs:
-# - VPCId: The ID of the VPC that was created.
+# - VpcId: The ID of the VPC that was created.
 # - PublicRouteTableId: The ID of the Route Table that was created with a route
 #   to the Internet Gateway.
 # - PrivateRouteTable1Id: The ID of the first private Route Table that was
@@ -81,11 +81,11 @@ Resources:
           Value: !Sub PrivateRT2
 
 Outputs:
-  VPCId:
+  VpcId:
     Description: VPC ID
     Value: !Ref VPC
     Export:
-      Name: !Sub ${AWS::StackName}-VPCID
+      Name: !Sub ${AWS::StackName}-VpcId
   PublicRouteTableId:
     Description: Public route table ID
     Value: !Ref PublicRouteTable
