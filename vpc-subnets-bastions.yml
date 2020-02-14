@@ -1,0 +1,98 @@
+# Building onto an existing VPC created using the "vpc.yml" template, with
+# Subnets created using the "vpc-subnets.yml" template, creates bastion hosts
+# as EC2 instances in an Auto Scaling Group.
+#
+# Parameters:
+# - VPCStackName: The name of the stack that was created using the "vpc.yml"
+#   template, and from which various exported values will be imported.
+# - VPCSubnetsStackName: The name of the stack that was created using the
+#   "vpc-subnets.yml" template, and from which various exported values will be
+#   imported.
+# - AMIID: The ID of the AMI to use. This must be looked up manually using the
+#   AWS Console.
+# - KeyName: The name of the EC2 Key Pair that the bastion instances will use.
+#   This key pair must be manually created outside of CloudFormation, either
+#   using the AWS Console or the AWS CLI. The CLI command to create a Key Pair:
+#     aws ec2 create-key-pair --key-name $KEY_NAME
+#
+# Outputs:
+# - BastionSecurityGroupId: The ID of the Security Group used by the bastion
+#   hosts.
+
+Parameters:
+  VPCStackName:
+    Type: String
+    MinLength: 1
+    MaxLength: 255
+    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+  VPCSubnetsStackName:
+    Type: String
+    MinLength: 1
+    MaxLength: 255
+    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+  AMIID:
+    Type: String
+    MinLength: 1
+    MaxLength: 255
+    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+  KeyName:
+    Type: String
+    MinLength: 1
+    MaxLength: 255
+    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+
+Resources:
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: BastionSG
+      GroupDescription: Bastion host security group
+      VpcId:
+        Fn::ImportValue: !Sub ${VPCStackName}-VPCID
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: BastionSG
+  BastionLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: BastionHostLT
+      LaunchTemplateData:
+        ImageId: !Ref AMIID
+        InstanceType: t2.micro
+        KeyName: !Ref KeyName
+        SecurityGroupIds:
+          - !Ref BastionSecurityGroup
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: Bastion
+
+  BastionHost1:
+    Type: AWS::EC2::Instance
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: !Ref BastionLaunchTemplate
+        Version: 1
+      SubnetId:
+        Fn::ImportValue: !Sub ${VPCSubnetsStackName}-PublicSubnet1ID
+  BastionHost2:
+    Type: AWS::EC2::Instance
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: !Ref BastionLaunchTemplate
+        Version: 1
+      SubnetId:
+        Fn::ImportValue: !Sub ${VPCSubnetsStackName}-PublicSubnet2ID
+
+Outputs:
+  BastionSecurityGroupId:
+    Description: Bastion host security group ID
+    Value: !Ref BastionSecurityGroup
+    Export:
+      Name: !Sub ${AWS::StackName}-BastionSecurityGroupID
