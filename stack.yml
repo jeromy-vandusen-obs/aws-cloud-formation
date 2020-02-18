@@ -1,0 +1,82 @@
+# Creates a nested stack built using a number of existing stacks:
+# - vpc.yml
+# - subnets.yml
+# - bastion-hosts.yml
+#
+# Prerequisites:
+# - Create an S3 bucket called "obsglobal-cloudformation-templates", or if a
+#   different name is used, be sure to provide that name as the TemplatesBucket
+#   parameter value.
+# - Upload stack.yml, vpc.yml, subnets.yml, and bastion-hosts.yml to the S3
+#   bucket.
+# - Verify the latest AMI ID for the ubuntu image used by the bastion host.
+# - Create a key pair called "ec2-bastion", or if a different name is used, be
+#   sure to provide that name as the BastionKeyName parameter value.
+#
+# Parameters:
+# - TemplatesBucket: The name of the S3 bucket that the CloudFormation templates
+#   are located in.
+# - CidrBlockPrefix: The 16-bit prefix for the CIDR block. Valid values are:
+#   - 10.0 through 10.255
+#   - 172.16 through 172.31
+#   - 192.168
+# - AmiId: The ID of the AMI to use for the bastion hosts. This must be looked
+#   up manually using the AWS Console.
+# - KeyName: The name of the EC2 Key Pair that the bastion instances will use.
+#   This key pair must be manually created outside of CloudFormation, either
+#   using the AWS Console or the AWS CLI. The CLI command to create a Key Pair:
+#     aws ec2 create-key-pair --key-name $KEY_NAME
+
+Parameters:
+  TemplatesBucket:
+    Type: String
+    MinLength: 1
+    MaxLength: 255
+    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+    Default: obsglobal-cloudformation-templates
+  CidrBlockPrefix:
+    Type: String
+    MinLength: 4
+    MaxLength: 7
+    AllowedPattern: ^[0-9]{1,3}\.[0-9]{1,3}$
+    Default: 10.0
+  BastionAmiId:
+    Type: String
+    MinLength: 1
+    MaxLength: 255
+    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+    Default: ami-07ebfd5b3428b6f4d
+  BastionKeyName:
+    Type: String
+    MinLength: 1
+    MaxLength: 255
+    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+    Default: ec2-bastion
+
+Resources:
+  VpcStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        CidrBlockPrefix: !Ref CidrBlockPrefix
+      TemplateURL: !Sub https://${TemplatesBucket}.s3.amazonaws.com/vpc.yml
+  SubnetsStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        VpcId: !GetAtt VpcStack.Outputs.VpcId
+        CidrBlockPrefix: !Ref CidrBlockPrefix
+        PublicRouteTableId: !GetAtt VpcStack.Outputs.PublicRouteTableId
+        PrivateRouteTable1Id: !GetAtt VpcStack.Outputs.PrivateRouteTable1Id
+        PrivateRouteTable2Id: !GetAtt VpcStack.Outputs.PrivateRouteTable2Id
+      TemplateURL: !Sub https://${TemplatesBucket}.s3.amazonaws.com/subnets.yml
+  BastionHostsStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        VpcId: !GetAtt VpcStack.Outputs.VpcId
+        PublicSubnet1Id: !GetAtt SubnetsStack.Outputs.PublicSubnet1Id
+        PublicSubnet2Id: !GetAtt SubnetsStack.Outputs.PublicSubnet2Id
+        AmiId: !Ref BastionAmiId
+        KeyName: !Ref BastionKeyName
+      TemplateURL: !Sub https://${TemplatesBucket}.s3.amazonaws.com/bastion-hosts.yml

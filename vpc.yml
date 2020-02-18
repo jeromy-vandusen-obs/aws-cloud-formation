@@ -16,8 +16,6 @@
 #   created.
 # - PrivateRouteTable2Id: The ID of the second private Route Table that was
 #   created.
-# - CidrBlockPrefix: The parameter value that was provided, to be passed on to
-#   other templates for consistency.
 
 Parameters:
   CidrBlockPrefix:
@@ -84,25 +82,12 @@ Outputs:
   VpcId:
     Description: VPC ID
     Value: !Ref VPC
-    Export:
-      Name: !Sub ${AWS::StackName}-VpcId
   PublicRouteTableId:
     Description: Public route table ID
     Value: !Ref PublicRouteTable
-    Export:
-      Name: !Sub ${AWS::StackName}-PublicRouteTableId
   PrivateRouteTable1Id:
     Description: Private route table ID
     Value: !Ref PrivateRouteTable1
-    Export:
-      Name: !Sub ${AWS::StackName}-PrivateRouteTable1Id
   PrivateRouteTable2Id:
     Description: Private route table ID
     Value: !Ref PrivateRouteTable2
-    Export:
-      Name: !Sub ${AWS::StackName}-PrivateRouteTable2Id
-  CidrBlockPrefix:
-    Description: CIDR block prefix
-    Value: !Sub ${CidrBlockPrefix}
-    Export:
-      Name: !Sub ${AWS::StackName}-CidrBlockPrefix

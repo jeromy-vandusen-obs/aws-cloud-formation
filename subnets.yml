@@ -4,8 +4,17 @@
 # created.
 #
 # Parameters:
-# - VpcStackName: The name of the stack that was created using the "vpc.yml"
-#   template, and from which various exported values will be imported.
+# - VpcId: The ID of the VPC that was created using the "vpc.yml" template.
+# - CidrBlockPrefix: The 16-bit prefix for the CIDR block. Valid values are:
+#   - 10.0 through 10.255
+#   - 172.16 through 172.31
+#   - 192.168
+# - PublicRouteTableId: The ID of the public Route Table that was created using
+#   the "vpc.yml" template.
+# - PrivateRouteTable1Id: The ID of the first private Route Table that was
+#   created using the "vpc.yml" template.
+# - PrivateRouteTable2Id: The ID of the second private Route Table that was
+#   created using the "vpc.yml" template.
 #
 # Outputs:
 # - PublicSubnet1Id: The ID of the first public Subnet that was created.
@@ -14,7 +23,27 @@
 # - PrivateSubnet2Id: The ID of the second private Subnet that was created.
 
 Parameters:
-  VpcStackName:
+  VpcId:
+    Type: String
+    MinLength: 1
+    MaxLength: 255
+    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+  CidrBlockPrefix:
+    Type: String
+    MinLength: 4
+    MaxLength: 7
+    AllowedPattern: ^[0-9]{1,3}\.[0-9]{1,3}$
+  PublicRouteTableId:
+    Type: String
+    MinLength: 1
+    MaxLength: 255
+    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+  PrivateRouteTable1Id:
+    Type: String
+    MinLength: 1
+    MaxLength: 255
+    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+  PrivateRouteTable2Id:
     Type: String
     MinLength: 1
     MaxLength: 255
@@ -24,11 +53,10 @@ Resources:
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId:
-        Fn::ImportValue: !Sub ${VpcStackName}-VpcId
+      VpcId: !Ref VpcId
       CidrBlock: !Join
         - ""
-        - - Fn::ImportValue: !Sub ${VpcStackName}-CidrBlockPrefix
+        - - !Ref CidrBlockPrefix
           - .0.0/20
       AvailabilityZone: us-east-1a
       MapPublicIpOnLaunch: true
@@ -38,18 +66,16 @@ Resources:
   PublicSubnet1RouteTable:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId:
-        Fn::ImportValue: !Sub ${VpcStackName}-PublicRouteTableId
+      RouteTableId: !Ref PublicRouteTableId
       SubnetId: !Ref PublicSubnet1
 
   PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId:
-        Fn::ImportValue: !Sub ${VpcStackName}-VpcId
+      VpcId: !Ref VpcId
       CidrBlock: !Join
         - ""
-        - - Fn::ImportValue: !Sub ${VpcStackName}-CidrBlockPrefix
+        - - !Ref CidrBlockPrefix
           - .16.0/20
       AvailabilityZone: us-east-1b
       MapPublicIpOnLaunch: true
@@ -59,18 +85,16 @@ Resources:
   PublicSubnet2RouteTable:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId:
-        Fn::ImportValue: !Sub ${VpcStackName}-PublicRouteTableId
+      RouteTableId: !Ref PublicRouteTableId
       SubnetId: !Ref PublicSubnet2
 
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId:
-        Fn::ImportValue: !Sub ${VpcStackName}-VpcId
+      VpcId: !Ref VpcId
       CidrBlock: !Join
         - ""
-        - - Fn::ImportValue: !Sub ${VpcStackName}-CidrBlockPrefix
+        - - !Ref CidrBlockPrefix
           - .128.0/20
       AvailabilityZone: us-east-1a
       Tags:
@@ -79,8 +103,7 @@ Resources:
   PrivateSubnet1RouteTable:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId:
-        Fn::ImportValue: !Sub ${VpcStackName}-PrivateRouteTable1Id
+      RouteTableId: !Ref PrivateRouteTable1Id
       SubnetId: !Ref PrivateSubnet1
   NATGateway1ElasticIp:
     Type: AWS::EC2::EIP
@@ -100,19 +123,17 @@ Resources:
   NATGateway1Route:
     Type: AWS::EC2::Route
     Properties:
-      RouteTableId:
-        Fn::ImportValue: !Sub ${VpcStackName}-PrivateRouteTable1Id
+      RouteTableId: !Ref PrivateRouteTable1Id
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId: !Ref NATGateway1
 
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId:
-        Fn::ImportValue: !Sub ${VpcStackName}-VpcId
+      VpcId: !Ref VpcId
       CidrBlock: !Join
         - ""
-        - - Fn::ImportValue: !Sub ${VpcStackName}-CidrBlockPrefix
+        - - !Ref CidrBlockPrefix
           - .144.0/20
       AvailabilityZone: us-east-1b
       Tags:
@@ -121,8 +142,7 @@ Resources:
   PrivateSubnet2RouteTable:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId:
-        Fn::ImportValue: !Sub ${VpcStackName}-PrivateRouteTable2Id
+      RouteTableId: !Ref PrivateRouteTable2Id
       SubnetId: !Ref PrivateSubnet2
   NATGateway2ElasticIp:
     Type: AWS::EC2::EIP
@@ -142,8 +162,7 @@ Resources:
   NATGateway2Route:
     Type: AWS::EC2::Route
     Properties:
-      RouteTableId:
-        Fn::ImportValue: !Sub ${VpcStackName}-PrivateRouteTable2Id
+      RouteTableId: !Ref PrivateRouteTable2Id
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId: !Ref NATGateway2
 
@@ -151,20 +170,12 @@ Outputs:
   PublicSubnet1Id:
     Description: Public subnet 1 ID
     Value: !Ref PublicSubnet1
-    Export:
-      Name: !Sub ${AWS::StackName}-PublicSubnet1Id
   PublicSubnet2Id:
     Description: Public subnet 2 ID
     Value: !Ref PublicSubnet2
-    Export:
-      Name: !Sub ${AWS::StackName}-PublicSubnet2Id
   PrivateSubnet1Id:
     Description: Private subnet 1 ID
     Value: !Ref PrivateSubnet1
-    Export:
-      Name: !Sub ${AWS::StackName}-PrivateSubnet1Id
   PrivateSubnet2Id:
     Description: Private subnet 2 ID
     Value: !Ref PrivateSubnet2
-    Export:
-      Name: !Sub ${AWS::StackName}-PrivateSubnet2Id
