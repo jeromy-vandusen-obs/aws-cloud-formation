@@ -24,10 +24,7 @@
 
 Parameters:
   VpcId:
-    Type: String
-    MinLength: 1
-    MaxLength: 255
-    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+    Type: AWS::EC2::VPC::Id
   CidrBlockPrefix:
     Type: String
     MinLength: 4

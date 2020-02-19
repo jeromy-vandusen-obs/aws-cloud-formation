@@ -22,30 +22,15 @@
 
 Parameters:
   VpcId:
-    Type: String
-    MinLength: 1
-    MaxLength: 255
-    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+    Type: AWS::EC2::VPC::Id
   PublicSubnet1Id:
-    Type: String
-    MinLength: 1
-    MaxLength: 255
-    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+    Type: AWS::EC2::Subnet::Id
   PublicSubnet2Id:
-    Type: String
-    MinLength: 1
-    MaxLength: 255
-    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+    Type: AWS::EC2::Subnet::Id
   AmiId:
-    Type: String
-    MinLength: 1
-    MaxLength: 255
-    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+    Type: AWS::EC2::Image::Id
   KeyName:
-    Type: String
-    MinLength: 1
-    MaxLength: 255
-    AllowedPattern: ^[a-zA-Z][-a-zA-z0-9]*$
+    Type: AWS::EC2::KeyPair::KeyName
 
 Resources:
   BastionSecurityGroup:
