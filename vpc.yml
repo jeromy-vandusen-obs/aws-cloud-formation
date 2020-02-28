@@ -34,14 +34,14 @@ Resources:
       InstanceTenancy: default
       Tags:
         - Key: Name
-          Value: !Sub MainVPC
+          Value: MainVPC
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: !Sub MainIGW
+          Value: MainIGW
   VPCGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
@@ -54,7 +54,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub PublicRT
+          Value: PublicRT
   PublicRoute:
     Type: AWS::EC2::Route
     DependsOn: VPCGatewayAttachment
@@ -69,14 +69,14 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub PrivateRT1
+          Value: PrivateRT1
   PrivateRouteTable2:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub PrivateRT2
+          Value: PrivateRT2
 
 Outputs:
   VpcId:

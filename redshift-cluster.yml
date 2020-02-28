@@ -1,0 +1,48 @@
+Parameters:
+  Subnet1Id:
+    Type: AWS::EC2::Subnet::Id
+  Subnet2Id:
+    Type: AWS::EC2::Subnet::Id
+
+Resources:
+  RedshiftDatabaseElasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Tags:
+        - Key: Name
+          Value: RedshiftEIP
+
+  RedshiftClusterSubnetGroup:
+    Type: AWS::Redshift::ClusterSubnetGroup
+    Properties:
+      Description: RedshiftSNG
+      SubnetIds:
+        - !Ref Subnet1Id
+        - !Ref Subnet2Id
+      Tags:
+        - Key: Name
+          Value: RedshiftSNG
+
+  RedshiftCluster:
+    Type: AWS::Redshift::Cluster
+    Properties:
+      ClusterIdentifier: redshift-cluster
+      ClusterSubnetGroupName: !Ref RedshiftClusterSubnetGroup
+      ClusterType: multi-node
+      DBName: prod
+      ElasticIp: !Ref RedshiftDatabaseElasticIP
+      IamRoles:
+        - !Sub arn:aws:iam::${AWS::AccountId}:role/aws-service-role/redshift.${AWS::URLSuffix}/AWSServiceRoleForRedshift
+      MasterUsername: root
+      MasterUserPassword: q1w2E#R$
+      NodeType: dc2.large
+      NumberOfNodes: 2
+      PubliclyAccessible: true
+      Tags:
+        - Key: Name
+          Value: RedshiftCluster
+
+Outputs:
+  RedshiftClusterId:
+    Description: Redshift cluster ID
+    Value: !Ref RedshiftCluster
